@@ -14,6 +14,11 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
 
+//import java.util.concurrent.TimeUnit;
+
+import java.util.Iterator;
+import java.util.Map;
+
 
 public class HttpHandler implements Runnable {
 	private Socket socket;
@@ -70,7 +75,7 @@ public class HttpHandler implements Runnable {
 		String context="";
 		BufferedReader bf = new BufferedReader(new InputStreamReader(input));
 		int j=0;
-		boolean record=false;
+		int record=0;
 		char ch;
 
 		do {
@@ -97,20 +102,41 @@ public class HttpHandler implements Runnable {
 
 		if (method.equals("POST")) {
 			do {
-				if (ch=='{') record=true;
-				if (record) sentJSON=sentJSON+ch;
-				if (ch=='}') break;
+				if (ch=='{') record++;
+				if (record!=0) sentJSON=sentJSON+ch;
+				if (ch=='}') {
+					record--;
+					if (record==0) break;
+				}			
 
 				ch=(char)(bf.read());
 				j++;				
 				
 				//if (j==8191) throw Exception;		
-			} while (true);
-			//curl -X POST -H "Content-Type: application/json" -d "{\"login\":\"my_login\",\"password\":\"my_password\"}" http://127.0.0.1:8080/test
+			} while (j<8192);			
 			JSONParser parser = new JSONParser();
-			//JSONObject json = (JSONObject) parser.parse("{\"Name\":\"Raja\",\"EmployeeId\":\"115\",\"Age\":\"30\"}");
 			JSONObject json = (JSONObject) parser.parse(sentJSON);
-			System.out.println((String) json.get("login"));
+			//System.out.println((String) json.get("login"));
+			//TimeUnit.SECONDS.sleep(10);
+
+			JSONObject json2 = ((JSONObject)json.get("index"));
+          
+			JSONArray ja = (JSONArray) json2.get("indexshares");
+          
+			// iterating phoneNumbers
+			Iterator itr2 = ja.iterator();
+			Iterator<Map.Entry> itr1;
+
+			while (itr2.hasNext()) 
+			{
+				itr1 = ((Map) itr2.next()).entrySet().iterator();
+				while (itr1.hasNext()) {
+					Map.Entry pair = itr1.next();
+					System.out.println(pair.getKey() + " : " + pair.getValue());
+				}
+				System.out.println("one out!");
+			}
+			
 		}
 
 		populateResponse(output);

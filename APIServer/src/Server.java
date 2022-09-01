@@ -7,7 +7,7 @@ import java.net.Socket;
 
 
 public class Server {
-	private static int PORT = 8080;
+	private static int PORT = 54543;
 	private ServerSocket serverSocket;
 	//private static HashMap<String,Integer> requestedRes = new HashMap<String,Integer>();
 	//private static final String DELIMITER = "|";

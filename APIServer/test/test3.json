@@ -1,0 +1,32 @@
+{
+     "lastName":"Smith",
+    "address":{
+        "streetAddress":"21 2nd Street",
+         "city":"New York",
+         "state":"NY",
+         "postalCode":10021
+		 
+		 "indexshares": [
+			{
+				"shareName": "AAPL.OQ",
+				"sharePrice": "141.03",
+				"numberOfshares": 100.0
+			},
+			{
+				"shareName": "META.OQ",
+				"sharePrice": 171.67,
+				"numberOfshares": 50.78
+			}
+		]
+    },
+     "age":25,
+     "phoneNumbers":[
+            {
+            "type":"home", "number":"212 555-1234"
+            },
+         {
+            "type":"fax", "number":"212 555-1234"
+         }
+     ],
+     "firstName":"John"
+}
