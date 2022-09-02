@@ -27,15 +27,12 @@ public class HttpHandler implements Runnable {
 	public void run() {
 		try {
 			handleRequest();
-			//socket.close();
 		} catch (Exception e) {
 			System.err.println("Error Occured: " + e.getMessage());
 			try {
 				socket.close();
-				//System.exit(0);
 			} catch (IOException e1) {
 				System.err.println("Error Closing socket Connection.");
-				//System.exit(0);
 			}
 		}
 	}

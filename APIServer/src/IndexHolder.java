@@ -13,7 +13,7 @@ public class IndexHolder {
     }
 
     public synchronized void Pop(String name) {
-        this.indices.remove(indices.size()-1);
+        this.indices.remove(this.indices.size()-1);
         this.namesHash.remove(name);
     }
 

@@ -34,7 +34,7 @@ public class Index {
         int i;
 
         for (i=0; i<s; i++) this.indexValue+=this.shares.get(i).GetIndexValue();
-        for (i=0; i<s; i++) shares.get(i).CalcWeightPct(this.indexValue);
+        for (i=0; i<s; i++) this.shares.get(i).CalcWeightPct(this.indexValue);
         return this.indexValue;
     }
 
@@ -55,7 +55,7 @@ public class Index {
             Share newShare=new Share(name, price, number);
             newShare.CalcWeightPct(this.indexValue);
             double factor=(this.indexValue-newShare.GetIndexValue())/this.indexValue;
-            for (i=0; i<s; i++) shares.get(i).MultIndexValue(factor);            
+            for (i=0; i<s; i++) this.shares.get(i).MultIndexValue(factor);            
             this.shares.add(newShare);
             this.namesHash.put(name, s);
             
@@ -74,7 +74,7 @@ public class Index {
             this.namesHash.remove(name);
             double factor=this.indexValue/(this.indexValue-r);
             Integer s=this.shares.size();
-            for (i=0; i<s; i++) shares.get(i).MultIndexValue(factor); 
+            for (i=0; i<s; i++) this.shares.get(i).MultIndexValue(factor); 
             return "200";
         }
         else return "401";
@@ -89,7 +89,7 @@ public class Index {
             if (diff>0) {
                 double r=(this.shares.get(sn.intValue())).SetDiffPrice(diff);
                 factor=this.indexValue/(this.indexValue-r);
-                shares.get(sn.intValue()).CalcWeightPct(this.indexValue);
+                this.shares.get(sn.intValue()).CalcWeightPct(this.indexValue);
                 Integer s=this.shares.size();
                 for (i=0; i<s; i++) (this.shares.get(i)).MultIndexValue(factor);                
                 
