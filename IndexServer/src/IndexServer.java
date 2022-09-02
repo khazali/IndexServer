@@ -4,14 +4,14 @@ import java.net.Socket;
 
 
 
-public class Server {
+public class IndexServer {
 	private static int PORT=54543;
 	private ServerSocket serverSocket;
 	private IndexHolder Indices=new IndexHolder();	
 	
 	public static void main(String[] args) {		
 		try {	
-			Server server=new Server();
+			IndexServer server=new IndexServer();
 			server.start();			
 		} catch (IOException e) {
 			System.err.println("Error occured:"+e.getMessage());
@@ -19,7 +19,7 @@ public class Server {
 		}
 	}
 	
-	public Server() throws IOException {
+	public IndexServer() throws IOException {
 			serverSocket=new ServerSocket(PORT);		
 	}
 	
