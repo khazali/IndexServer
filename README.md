@@ -41,9 +41,9 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 Please make sure to update tests as appropriate.
 The code still lacks the following features, which are being added gradually:
 
-1. A Grphical User Interface (GUI).
-2. Increasing the performance.
-3. Increasing the number of supported APIs.
+1.	A Grphical User Interface (GUI).
+2.	Increasing the performance.
+3.	Increasing the number of supported APIs.
 
 
 ## Tests
@@ -52,21 +52,30 @@ In the test directory, a simple multi-threaded http client is implmented to chec
 
 ## APIs
 1.	Index creation API
-To accept a list of shares and create an index:
+	To accept a list of shares and create an index:
 
-POST /create
+	POST /create
 
-Returns: HTTP response with empty body
-* 201 – if index is created
-* 409 – if index already exists
-* 400 – if any validation fails
+	Returns: HTTP response with empty body
+	* 201 – if index is created
+	* 409 – if index already exists
+	* 400 – if any validation fails
 
-2. Index adjustment API
-Three different types of operations on one or more given indices. For any index adjustment the index value should always be unchanged:
+2.	Index adjustment API
+	Three different types of operations on one or more given indices. For any index adjustment the index value should always be unchanged:
 
-POST /indexAdjustment
+	POST /indexAdjustment
 
-** share-Addition
+	2a.	share-Addition
+		Given a share with name, price and number is to be added to given index/indices keeping the index value constant adjust the index composition uniform.
+		• Validations are applied in a similar manner as above API.
+		• Addition of existing member is not allowed.
+		• One request will have only one index affected.
+		• Returns: Empty body with HTTP code:
+		o 201 - if member is added
+		o 202 - if share already exists
+		o 400 – if any validation fails
+		o 404 – index does not exist
 
 ## Quotes
 “Every problem is a gift. Without them we wouldn’t grow” – Tony Robbins.
