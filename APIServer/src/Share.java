@@ -26,9 +26,11 @@ public class Share {
     public void SetSharePrice(double price) {
         this.sharePrice=price;
     }
-    public void SetDiffPrice(double price) {
-        this.sharePrice=price;
+    public double SetDiffPrice(double price) {
+        double r=(this.sharePrice-price)*this.numberOfShares;
+        this.sharePrice=price;       
         this.indexValue=this.numberOfShares*this.sharePrice;
+        return r;
     }
     public double GetSharePrice() {
         return this.sharePrice;

@@ -29,7 +29,7 @@ public class Index {
         return this.indexName;
     }
 
-    public void Rebalance() {        
+    /*public void Rebalance() {        
         //if (indexValue!=0) {
         int s=shares.size();
         int i;
@@ -39,7 +39,7 @@ public class Index {
         factor=this.indexValue/sum;
         for (i=0; i<s; i++) shares.get(i).MultIndexValue(factor);            
         //}
-    }
+    }*/
 
     public double CalculateIndex() {
         int s=this.shares.size();
@@ -65,11 +65,12 @@ public class Index {
             int i;
             Integer s=this.shares.size();
             Share newShare=new Share(name, price, number);
+            newShare.CalcWeightPct(this.indexValue);
+            double factor=(this.indexValue-newShare.GetIndexValue())/this.indexValue;
+            for (i=0; i<s; i++) shares.get(i).MultIndexValue(factor);            
             this.shares.add(newShare);
             this.namesHash.put(name, s);
-            double factor=this.indexValue/(this.indexValue+newShare.GetIndexValue());
-            for (i=0; i<s; i++) shares.get(i).MultIndexValue(factor); 
-            newShare.CalcWeightPct(this.indexValue);
+            
             //Rebalance();
             return "200";
         }
@@ -94,19 +95,21 @@ public class Index {
     }
 
     public synchronized String Dividend(String name, double div) {
-        double sum=0;
+        //double sum=0;
         double factor;
         int i;
-        Integer s=this.namesHash.get(name);
-        if (s!=null) {
-            double diff=(this.shares.get(s.intValue())).GetSharePrice()-div;
+        Integer sn=this.namesHash.get(name);
+        if (sn!=null) {
+            double diff=(this.shares.get(sn.intValue())).GetSharePrice()-div;
             if (diff>0) {
-                (this.shares.get(s.intValue())).SetDiffPrice(diff);
-                for (i=0; i<s; i++) sum+=this.shares.get(i).GetIndexValue();
-                factor=this.indexValue/sum;
+                double r=(this.shares.get(sn.intValue())).SetDiffPrice(diff);
+                //for (i=0; i<s; i++) sum+=this.shares.get(i).GetIndexValue();
+                factor=this.indexValue/(this.indexValue-r);
+                shares.get(sn.intValue()).CalcWeightPct(this.indexValue);
+                Integer s=this.shares.size();
                 for (i=0; i<s; i++) {
-                    shares.get(i).CalcWeightPct(sum);
-                    shares.get(i).MultIndexValue(factor);                
+                    //shares.get(i).CalcWeightPct(sum);
+                    (this.shares.get(i)).MultIndexValue(factor);                
                 }
                 return "200";
             }
