@@ -24,12 +24,13 @@ public class Server {
 	}
 	
 	private void start() throws IOException {
-		while (true) {
-			Socket socket=serverSocket.accept();
+		Socket socket;
+		do {
+			socket=serverSocket.accept();
 			HttpHandler connection=new HttpHandler(socket, Indices);
 
 			Thread request=new Thread(connection);
 			request.start();
-		}
+		} while (socket.isConnected());
 	}
 }

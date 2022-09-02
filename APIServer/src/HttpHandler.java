@@ -15,7 +15,7 @@ import java.util.Iterator;
 public class HttpHandler implements Runnable {
 	private Socket socket;
 	private String retCode="200";
-	private String OutputString;
+	private String outputString;
 	private IndexHolder indices;
 	private final int MaxBufferSize=8192;
 	
@@ -27,6 +27,7 @@ public class HttpHandler implements Runnable {
 	public void run() {
 		try {
 			handleRequest();
+			//socket.close();
 		} catch (Exception e) {
 			System.err.println("Error Occured: " + e.getMessage());
 			try {
@@ -141,14 +142,14 @@ public class HttpHandler implements Runnable {
 		String REQ_FOUND="HTTP/1.0 "+this.retCode+Message();
 		String SERVER="Server: HTTP server/0.1\n";
 		String DATE="Date: " + format.format(new java.util.Date()) + "\n";
-		String CONTENT_TYPE="Content-Type:application/json";
-		//String CONTENT_TYPE="Content-Type:TEXT\n";
-		if (OutputString!=null) l=OutputString.length();
+		String CONTENT_TYPE="Content-Type: application/json\n";
+		String ACCEPT="Accept: application/json\n";
+		if (this.outputString!=null) l=this.outputString.length();
 		String LENGTH="Content-Length: "+l+"\n\n";
 
-		String header=REQ_FOUND+SERVER+DATE+CONTENT_TYPE+LENGTH;
+		String header=REQ_FOUND+SERVER+DATE+ACCEPT+CONTENT_TYPE+LENGTH;
 		output.write(header.getBytes());
-		if (l!=0) output.write(OutputString.getBytes());
+		if (l!=0) output.write(this.outputString.getBytes());
 		
 		output.flush();
 	}
@@ -234,8 +235,8 @@ public class HttpHandler implements Runnable {
 
 	private void GetAllStates() {
 		JSONObject json=this.indices.DoStates();
-		if (json==null) this.OutputString="";
-		else this.OutputString=Pretty(json.toString());
+		if (json==null) this.outputString="";
+		else this.outputString=Pretty(json.toString());
 	}
 
 	private void GetState(String indexName) {		
@@ -244,7 +245,7 @@ public class HttpHandler implements Runnable {
 			JSONObject json=new JSONObject();
 			JSONObject subjson=index.GetState();
 			json.put("indexDetails", subjson);
-			this.OutputString=Pretty(json.toString());
+			this.outputString=Pretty(json.toString());
 		}
 	}
 
