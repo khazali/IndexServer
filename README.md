@@ -113,7 +113,6 @@ GET /indexState/{index_name}
 
 I never refuse a good problem, which MCPricer was surely one of them. When I have a challenge, I feel alive. How abou you?
  
- 
- 
+  
 ## License
 [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.en.html)
