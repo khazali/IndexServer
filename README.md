@@ -2,7 +2,6 @@
 IndexServer is a non-blocking, thread-safe, parallel Restful API for index management, written in java. It is specifically designed for low-latency applications.
 
 
-
 ## The code
 IndexServer can create indices, and add or remove shares to/from them. Dividend payouts can also be managed by IndexServer.
 The status of the indices are delivarble in JSON format. IndexServer is a in-memory solution, and does usde databases.
@@ -35,7 +34,6 @@ After run, you can send the requests to the default port of 54543.
 * Dividend cannot be greater than the price of the share.
 
 
-
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 Please make sure to update tests as appropriate.
@@ -51,31 +49,64 @@ In the test directory, a simple multi-threaded http client is implmented to chec
 
 
 ## APIs
-1.	Index creation API
-	To accept a list of shares and create an index:
+### Index creation API
+Accepts a list of shares and creates an index:
 
-	POST /create
+POST /create
 
-	Returns: HTTP response with empty body
-	* 201 – if index is created
-	* 409 – if index already exists
-	* 400 – if any validation fails
+Returns: HTTP response with empty body.
+* 201 – if index is created
+* 409 – if index already exists
+* 400 – if any validation fails
 
-2.	Index adjustment API
-	Three different types of operations on one or more given indices. For any index adjustment the index value should always be unchanged:
 
-	POST /indexAdjustment
+### Index adjustment API
+Three different types of operations on one or more given indices is availabe. For any index adjustment the index value is always unchanged:
 
-	2a.	share-Addition
-		Given a share with name, price and number is to be added to given index/indices keeping the index value constant adjust the index composition uniform.
-		• Validations are applied in a similar manner as above API.
-		• Addition of existing member is not allowed.
-		• One request will have only one index affected.
-		• Returns: Empty body with HTTP code:
-		o 201 - if member is added
-		o 202 - if share already exists
-		o 400 – if any validation fails
-		o 404 – index does not exist
+POST /indexAdjustment
+
+
+1.	Share addition
+Given a share with name, price and number is added to given index/indices keeping the index value constant. Moreover, the index composition is adjusted. Addition of existing member is not allowed. One request will have only one index affected.
+
+Returns: Empty body with HTTP code:
+* 201 - if member is added
+* 202 - if share already exists
+* 400 – if any validation fails
+* 404 – index does not exist
+
+
+2.	Share deletion
+Given a share name, is is deleted from the given index/indices. One request will have only one index affected.
+
+Returns: Empty body with HTTP code:
+* 200 – if member is deleted
+* 400 – if any validation fails
+* 401 – if member is not found in the index
+* 404 – index does not exist
+* 405 – index has less than two members after deletion
+
+
+3.	Share dividend
+Adjusts the price of the given share based on dividend and re-adjusts the index composition. One request will have multiple indices affected.
+
+Returns: Empty body with HTTP code:
+* 200 – if member is updated
+* 400 – if any validation fails
+* 401 – if member is not found in any index
+
+
+### Index state all
+The latest state of all indices is returned in JSON format:
+
+GET /indexState
+
+
+### Single index state
+The latest state of index is returned in JSON format.
+
+GET /indexState/{index_name}
+
 
 ## Quotes
 “Every problem is a gift. Without them we wouldn’t grow” – Tony Robbins.
