@@ -50,7 +50,7 @@ The code still lacks the following features, which are being added gradually:
 In the test directory, a simple multi-threaded http client is implmented to check the integrity of the IndexServer. You can also use curl or any other client to test IndexServer performance.
 
 
-##APIs
+## APIs
 1.	Index creation API
 To accept a list of shares and create an index:
 
@@ -66,7 +66,7 @@ Three different types of operations on one or more given indices. For any index 
 
 POST /indexAdjustment
 
-**share-Addition
+** share-Addition
 
 ## Quotes
 “Every problem is a gift. Without them we wouldn’t grow” – Tony Robbins.
