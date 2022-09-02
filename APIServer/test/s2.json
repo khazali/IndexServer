@@ -1,0 +1,22 @@
+{
+"additionOperation": {
+"shareName": "E.OQ",
+"sharePrice": 10,
+"numberOfshares": 20,
+"indexName": "INDEX_1"
+},
+
+
+"deletionOperation": {
+"operationType": "DELETION",
+"shareName": "D.OQ",
+"indexName": "INDEX_1"
+},
+
+
+"dividendOperation": {
+"operationType": "CASH_DIVIDEND",
+"shareName": "A.OQ",
+"dividendValue": 2.0
+}
+}

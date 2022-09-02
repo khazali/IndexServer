@@ -9,6 +9,7 @@ import java.net.Socket;
 public class Server {
 	private static int PORT = 54543;
 	private ServerSocket serverSocket;
+	private IndexHolder Indices=new IndexHolder();
 	//private static HashMap<String,Integer> requestedRes = new HashMap<String,Integer>();
 	//private static final String DELIMITER = "|";
 	
@@ -37,13 +38,11 @@ public class Server {
 			serverSocket = new ServerSocket(PORT);		
 	}
 
-	/**
-	 * @throws IOException
-	 */
+	
 	private void start() throws IOException {
 		while (true) {
 			Socket socket = serverSocket.accept();
-			HttpHandler connection = new HttpHandler(socket);
+			HttpHandler connection = new HttpHandler(socket, Indices);
 
 			Thread request = new Thread(connection);
 			request.start();

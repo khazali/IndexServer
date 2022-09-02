@@ -1,3 +1,4 @@
+//import java.beans.MethodDescriptor;
 import java.io.BufferedReader;
 //import java.io.File;
 import java.io.IOException;
@@ -22,11 +23,13 @@ import java.util.Map;
 
 public class HttpHandler implements Runnable {
 	private Socket socket;
-	//private String res;
+	private String retCode;
+	private String OutputString;
+	private IndexHolder indices;
 	
-	public HttpHandler(Socket socket) {
-		//this.res = null;
-		this.socket = socket;
+	public HttpHandler(Socket socket, IndexHolder inIndices) {
+		this.socket=socket;
+		this.indices=inIndices;
 	}
 
 	public void run() {
@@ -45,9 +48,7 @@ public class HttpHandler implements Runnable {
 		}
 	}
 
-	/**
-	 * @throws Exception
-	 */
+
 	private void handleRequest() throws Exception {
 		InputStream input;
 		OutputStream output;
@@ -63,12 +64,7 @@ public class HttpHandler implements Runnable {
 		socket.close();
 	}
 
-	/**
-	 * @param input
-	 * @param output
-	 * @param root 
-	 * @throws Exception
-	 */
+
 	private void serverRequest(InputStream input, OutputStream output) throws Exception {
 		String sentJSON="";
 		String method="";
@@ -113,56 +109,133 @@ public class HttpHandler implements Runnable {
 				j++;				
 				
 				//if (j==8191) throw Exception;		
-			} while (j<8192);			
+			} while (j<8192);
+
 			JSONParser parser = new JSONParser();
 			JSONObject json = (JSONObject) parser.parse(sentJSON);
-			//System.out.println((String) json.get("login"));
-			//TimeUnit.SECONDS.sleep(10);
 
-			JSONObject json2 = ((JSONObject)json.get("index"));
-          
-			JSONArray ja = (JSONArray) json2.get("indexshares");
-          
-			// iterating phoneNumbers
-			Iterator itr2 = ja.iterator();
-			Iterator<Map.Entry> itr1;
-
-			while (itr2.hasNext()) 
-			{
-				itr1 = ((Map) itr2.next()).entrySet().iterator();
-				while (itr1.hasNext()) {
-					Map.Entry pair = itr1.next();
-					System.out.println(pair.getKey() + " : " + pair.getValue());
-				}
-				System.out.println("one out!");
+			if (context.equals("/create")) {
+				AddIndex(json);
 			}
+			else if (context.equals("/indexAdjustment")) {
+				AdjustIndex(json);
+			}
+			//else throw exception 
+
+
+			
+			
 			
 		}
+
+		else if (method.equals("GET")) {
+			if (context.equals("/indexState")) {
+				GetAllStates();
+			}
+			else {
+				String[] indexName=context.split("/", 0);
+				GetState(indexName[2]);
+			}
+		}
+
+
 
 		populateResponse(output);
 	}
 
-	/**
-	 * @param resource
-	 * @param output
-	 * @throws IOException
-	 */
 	private void populateResponse(OutputStream output) throws IOException {
 		SimpleDateFormat format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z");
 		format.setTimeZone(TimeZone.getTimeZone("GMT"));
+		int l=0;
 
-		String resource="khazal\n";
-		String REQ_FOUND = "HTTP/1.0 200 OK\n";
-		String SERVER = "Server: HTTP server/0.1\n";
-		String DATE = "Date: " + format.format(new java.util.Date()) + "\n";
-		//String CONTENT_TYPE = "Content-Type:application/json";
-		String CONTENT_TYPE = "Content-Type:TEXT\n";
-		String LENGTH = "Content-Length: " + (resource.length()) + "\n\n";
+		String REQ_FOUND="HTTP/1.0 200 OK\n";
+		String SERVER="Server: HTTP server/0.1\n";
+		String DATE="Date: " + format.format(new java.util.Date()) + "\n";
+		String CONTENT_TYPE = "Content-Type:application/json";
+		//String CONTENT_TYPE="Content-Type:TEXT\n";
+		if (OutputString!=null) l=OutputString.length();
+		String LENGTH="Content-Length: " + l + "\n\n";
 
 		String header = REQ_FOUND + SERVER + DATE + CONTENT_TYPE + LENGTH;
 		output.write(header.getBytes());
-		output.write(resource.getBytes());
+		if (l!=0) output.write(OutputString.getBytes());
 		
 		output.flush();
 	}
+
+
+	private void AddIndex(JSONObject json) {
+		JSONObject subjson=(JSONObject)json.get("index");
+		JSONArray ja=(JSONArray) subjson.get("indexshares");
+
+		Index newIndex=this.indices.AddIndex(((String) subjson.get("indexName")));
+		Iterator itr=ja.iterator();
+		while (itr.hasNext()) {				
+			JSONObject subja=(JSONObject) itr.next();
+			newIndex.AddShareCreate(((String) subja.get("shareName")),  (Double.parseDouble((String) ((subja.get("sharePrice")).toString()))), (Double.parseDouble((String) ((subja.get("numberOfshares")).toString()))));
+		}
+		newIndex.CalculateIndex();
+	}
+
+	private void AdjustIndex(JSONObject json) {
+		Iterator itr=json.keySet().iterator();
+		while (itr.hasNext()) {	
+			String key=(String) itr.next();
+    		JSONObject subjson=(JSONObject) json.get(key);
+
+			if (key.equals("additionOperation")) {
+				Index Index4Edit=this.indices.GetByName((String) subjson.get("indexName"));
+				Index4Edit.AddShare((String) subjson.get("shareName"),  (Double.parseDouble((String) ((subjson.get("sharePrice")).toString()))), (Double.parseDouble((String) ((subjson.get("numberOfshares")).toString()))));
+			}
+			else if (key.equals("deletionOperation")) {
+				Index Index4Edit=this.indices.GetByName((String) subjson.get("indexName"));
+				Index4Edit.RemoveShare((String) subjson.get("shareName"));
+			}
+			else if (key.equals("dividendOperation")) {
+				this.indices.DoDividend((String) subjson.get("shareName"),  (Double.parseDouble((String) ((subjson.get("dividendValue")).toString()))));
+			}
+			//analyse returns
+			//else throw
+
+		}
+	}
+
+	private void GetAllStates() {
+		JSONObject json=this.indices.DoStates();
+		this.OutputString=Pretty(json.toString());
+	}
+
+	private void GetState(String indexName) {
+		JSONObject json=new JSONObject();
+		JSONObject subjson=(this.indices.GetByName(indexName)).GetState();
+		json.put("indexDetails", subjson);
+		this.OutputString=Pretty(json.toString());
+	}
+
+	private String Pretty(String jsonString) {
+		int count=0;
+		int s=jsonString.length();
+		int i, j;
+		String out="";
+		char ch, ch1;
+
+		for (i=0; i<s; i++) {
+			ch=jsonString.charAt(i);
+			if (i+1<s) ch1=jsonString.charAt(i+1);
+			else ch1='\0';
+
+			out=out+ch;
+
+			if ((ch=='{') || (ch=='[')) count++;
+			if ((ch1=='}') || (ch1==']')) count--;
+
+			if ((ch=='{') || (ch=='[') || (ch1=='}') || (ch1==']') || (ch==',')) {
+				out=out+'\n';
+				for (j=0; j<count; j++) out=out+'\t';
+			}			
+		}
+		return out;
+	}
 }
+
+
