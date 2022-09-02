@@ -69,7 +69,7 @@ POST /indexAdjustment
 1.	Share addition
 Given a share with name, price and number is added to given index/indices keeping the index value constant. Moreover, the index composition is adjusted. Addition of existing member is not allowed. One request will have only one index affected.
 
-Returns: Empty body with HTTP code:
+	Returns: Empty body with HTTP code:
 * 201 - if member is added
 * 202 - if share already exists
 * 400 – if any validation fails
@@ -79,7 +79,7 @@ Returns: Empty body with HTTP code:
 2.	Share deletion
 Given a share name, is is deleted from the given index/indices. One request will have only one index affected.
 
-Returns: Empty body with HTTP code:
+	Returns: Empty body with HTTP code:
 * 200 – if member is deleted
 * 400 – if any validation fails
 * 401 – if member is not found in the index
@@ -90,7 +90,7 @@ Returns: Empty body with HTTP code:
 3.	Share dividend
 Adjusts the price of the given share based on dividend and re-adjusts the index composition. One request will have multiple indices affected.
 
-Returns: Empty body with HTTP code:
+	Returns: Empty body with HTTP code:
 * 200 – if member is updated
 * 400 – if any validation fails
 * 401 – if member is not found in any index
