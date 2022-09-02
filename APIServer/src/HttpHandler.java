@@ -128,7 +128,7 @@ public class HttpHandler implements Runnable {
 			}
 		}
 		else this.retCode="400";
-		
+
 
 		PopulateResponse(output);
 	}
@@ -234,7 +234,8 @@ public class HttpHandler implements Runnable {
 
 	private void GetAllStates() {
 		JSONObject json=this.indices.DoStates();
-		this.OutputString=Pretty(json.toString());
+		if (json==null) this.OutputString="";
+		else this.OutputString=Pretty(json.toString());
 	}
 
 	private void GetState(String indexName) {		

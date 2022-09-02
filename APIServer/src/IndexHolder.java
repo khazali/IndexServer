@@ -59,12 +59,15 @@ public class IndexHolder {
     }
 
     public synchronized JSONObject DoStates() {
-        int i;
-        JSONObject json=new JSONObject();
-        JSONArray ja=new JSONArray();        
-
-        for (i=0; i<this.indices.size(); i++) ja.add((this.indices.get(i)).GetState());
-        json.put("indexDetails", ja);
-        return json;
+        int i, s;        
+        s=this.indices.size();
+        if (s==0) return null;
+        else {
+            JSONObject json=new JSONObject();
+            JSONArray ja=new JSONArray();        
+            for (i=0; i<s; i++) ja.add((this.indices.get(i)).GetState());
+            json.put("indexDetails", ja);
+            return json;
+        }
     }
 }
