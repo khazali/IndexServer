@@ -12,6 +12,11 @@ public class IndexHolder {
         super();
     }
 
+    public synchronized void Pop(String name) {
+        this.indices.remove(indices.size()-1);
+        this.namesHash.remove(name);
+    }
+
     public synchronized Index AddIndex(String name) {        
         if (this.namesHash.get(name)==null) {
             Integer s=this.indices.size();

@@ -1,31 +1,23 @@
-//import java.beans.MethodDescriptor;
 import java.io.BufferedReader;
-//import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-//import java.net.URLConnection;
-//import java.nio.file.Files;
-//import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
-
-//import java.util.concurrent.TimeUnit;
-
 import java.util.Iterator;
-import java.util.Map;
 
 
 public class HttpHandler implements Runnable {
 	private Socket socket;
-	private String retCode;
+	private String retCode="200";
 	private String OutputString;
 	private IndexHolder indices;
+	private final int MaxBufferSize=8192;
 	
 	public HttpHandler(Socket socket, IndexHolder inIndices) {
 		this.socket=socket;
@@ -39,12 +31,11 @@ public class HttpHandler implements Runnable {
 			System.err.println("Error Occured: " + e.getMessage());
 			try {
 				socket.close();
-				System.exit(0);
+				//System.exit(0);
 			} catch (IOException e1) {
 				System.err.println("Error Closing socket Connection.");
-				System.exit(0);
+				//System.exit(0);
 			}
-			System.err.println("Server is Terminating!");
 		}
 	}
 
@@ -69,28 +60,29 @@ public class HttpHandler implements Runnable {
 		String sentJSON="";
 		String method="";
 		String context="";
-		BufferedReader bf = new BufferedReader(new InputStreamReader(input));
+		BufferedReader bf=new BufferedReader(new InputStreamReader(input));
 		int j=0;
 		int record=0;
 		char ch;
+		
 
 		do {
 			ch=(char)(bf.read());
 			j++;
-		} while (Character.isWhitespace(ch));
+		} while ((Character.isWhitespace(ch)) && (j<this.MaxBufferSize));
 
-		while (!Character.isWhitespace(ch)) {			
+		while ((!Character.isWhitespace(ch)) && (j<this.MaxBufferSize)) {			
 			method=method+ch;
 			ch=(char)(bf.read());
 			j++;
 		}
 
-		while (Character.isWhitespace(ch)) {			
+		while ((Character.isWhitespace(ch)) && (j<this.MaxBufferSize)) {			
 			ch=(char)(bf.read());
 			j++;
 		}
 
-		while (!Character.isWhitespace(ch)) {			
+		while ((!Character.isWhitespace(ch)) && (j<this.MaxBufferSize)) {			
 			context=context+ch;
 			ch=(char)(bf.read());
 			j++;
@@ -107,56 +99,54 @@ public class HttpHandler implements Runnable {
 
 				ch=(char)(bf.read());
 				j++;				
-				
-				//if (j==8191) throw Exception;		
-			} while (j<8192);
+			} while (j<this.MaxBufferSize);
 
 			JSONParser parser = new JSONParser();
 			JSONObject json = (JSONObject) parser.parse(sentJSON);
 
 			if (context.equals("/create")) {
-				AddIndex(json);
+				this.retCode=AddIndex(json);
 			}
 			else if (context.equals("/indexAdjustment")) {
-				AdjustIndex(json);
+				this.retCode=AdjustIndex(json);
 			}
-			//else throw exception 
-
-
-			
-			
-			
+			else this.retCode="400";			
 		}
 
 		else if (method.equals("GET")) {
 			if (context.equals("/indexState")) {
 				GetAllStates();
+				this.retCode="200";
 			}
 			else {
 				String[] indexName=context.split("/", 0);
-				GetState(indexName[2]);
+				if ((indexName==null) || (indexName.length!=3)) this.retCode="400";
+				else {
+					GetState(indexName[2]);
+					this.retCode="200";
+				}
 			}
 		}
+		else this.retCode="400";
+		
 
-
-
-		populateResponse(output);
+		PopulateResponse(output);
 	}
 
-	private void populateResponse(OutputStream output) throws IOException {
-		SimpleDateFormat format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z");
+	private void PopulateResponse(OutputStream output) throws IOException {
+		SimpleDateFormat format=new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z");
 		format.setTimeZone(TimeZone.getTimeZone("GMT"));
 		int l=0;
 
-		String REQ_FOUND="HTTP/1.0 200 OK\n";
+		String REQ_FOUND="HTTP/1.0 "+this.retCode+Message();
 		String SERVER="Server: HTTP server/0.1\n";
 		String DATE="Date: " + format.format(new java.util.Date()) + "\n";
-		String CONTENT_TYPE = "Content-Type:application/json";
+		String CONTENT_TYPE="Content-Type:application/json";
 		//String CONTENT_TYPE="Content-Type:TEXT\n";
 		if (OutputString!=null) l=OutputString.length();
-		String LENGTH="Content-Length: " + l + "\n\n";
+		String LENGTH="Content-Length: "+l+"\n\n";
 
-		String header = REQ_FOUND + SERVER + DATE + CONTENT_TYPE + LENGTH;
+		String header=REQ_FOUND+SERVER+DATE+CONTENT_TYPE+LENGTH;
 		output.write(header.getBytes());
 		if (l!=0) output.write(OutputString.getBytes());
 		
@@ -164,40 +154,82 @@ public class HttpHandler implements Runnable {
 	}
 
 
-	private void AddIndex(JSONObject json) {
+	private String AddIndex(JSONObject json) {
+		int i=0;
+		String indexName, shareName;
+		double price, numberOfShares;
+
 		JSONObject subjson=(JSONObject)json.get("index");
 		JSONArray ja=(JSONArray) subjson.get("indexshares");
 
-		Index newIndex=this.indices.AddIndex(((String) subjson.get("indexName")));
+		indexName=(String) subjson.get("indexName");
+		if (indexName==null) return "400";		
+		Index newIndex=this.indices.AddIndex(indexName);
+		if (newIndex==null) return "409";
+
 		Iterator itr=ja.iterator();
-		while (itr.hasNext()) {				
+		while (itr.hasNext()) {	
+			i++;			
 			JSONObject subja=(JSONObject) itr.next();
-			newIndex.AddShareCreate(((String) subja.get("shareName")),  (Double.parseDouble((String) ((subja.get("sharePrice")).toString()))), (Double.parseDouble((String) ((subja.get("numberOfshares")).toString()))));
+			shareName=(String) subja.get("shareName");
+			if (shareName==null) return "400";
+			price=Double.parseDouble((String) ((subja.get("sharePrice")).toString()));
+			if (price<0) return "400";
+			numberOfShares=Double.parseDouble((String) ((subja.get("numberOfshares")).toString()));
+			if (numberOfShares<0) return "400";
+			if ((newIndex.AddShareCreate(shareName,  price, numberOfShares)).equals("202")) return "400";
+		}
+		if (i<2) {
+			this.indices.Pop(indexName);
+			return "400";
 		}
 		newIndex.CalculateIndex();
+		return "201";
 	}
 
-	private void AdjustIndex(JSONObject json) {
+	private String AdjustIndex(JSONObject json) {
 		Iterator itr=json.keySet().iterator();
+		if (!(itr.hasNext())) return "400";
 		while (itr.hasNext()) {	
 			String key=(String) itr.next();
     		JSONObject subjson=(JSONObject) json.get(key);
 
 			if (key.equals("additionOperation")) {
-				Index Index4Edit=this.indices.GetByName((String) subjson.get("indexName"));
-				Index4Edit.AddShare((String) subjson.get("shareName"),  (Double.parseDouble((String) ((subjson.get("sharePrice")).toString()))), (Double.parseDouble((String) ((subjson.get("numberOfshares")).toString()))));
+				String indexName=(String) subjson.get("indexName");
+				if (indexName==null) return "400";
+				Index Index4Edit=this.indices.GetByName(indexName);
+				if (Index4Edit==null) return "404";				
+
+				String shareName=(String) subjson.get("shareName");
+				if (shareName==null) return "400";
+				double price=Double.parseDouble((String) ((subjson.get("sharePrice")).toString()));
+				if (price<0) return "400";
+				double numberOfShares=Double.parseDouble((String) ((subjson.get("numberOfshares")).toString()));
+				if (numberOfShares<0) return "400";
+
+				return Index4Edit.AddShare(shareName,  price, numberOfShares);
 			}
 			else if (key.equals("deletionOperation")) {
-				Index Index4Edit=this.indices.GetByName((String) subjson.get("indexName"));
-				Index4Edit.RemoveShare((String) subjson.get("shareName"));
+				String indexName=(String) subjson.get("indexName");
+				if (indexName==null) return "400";
+				Index Index4Edit=this.indices.GetByName(indexName);
+				if (Index4Edit==null) return "404";
+				String shareName=(String) subjson.get("shareName");
+				if (shareName==null) return "400";
+
+				return Index4Edit.RemoveShare(shareName);
 			}
 			else if (key.equals("dividendOperation")) {
-				this.indices.DoDividend((String) subjson.get("shareName"),  (Double.parseDouble((String) ((subjson.get("dividendValue")).toString()))));
-			}
-			//analyse returns
-			//else throw
+				String shareName=(String) subjson.get("shareName");
+				if (shareName==null) return "400";
+				double div=Double.parseDouble((String) ((subjson.get("dividendValue")).toString()));
+				if (div<0) return "400";
 
+				return this.indices.DoDividend(shareName, div);
+			}
+			else return "400";
 		}
+		return "200";
 	}
 
 	private void GetAllStates() {
@@ -205,11 +237,14 @@ public class HttpHandler implements Runnable {
 		this.OutputString=Pretty(json.toString());
 	}
 
-	private void GetState(String indexName) {
-		JSONObject json=new JSONObject();
-		JSONObject subjson=(this.indices.GetByName(indexName)).GetState();
-		json.put("indexDetails", subjson);
-		this.OutputString=Pretty(json.toString());
+	private void GetState(String indexName) {		
+		Index index=this.indices.GetByName(indexName); 
+		if (index!=null) {
+			JSONObject json=new JSONObject();
+			JSONObject subjson=index.GetState();
+			json.put("indexDetails", subjson);
+			this.OutputString=Pretty(json.toString());
+		}
 	}
 
 	private String Pretty(String jsonString) {
@@ -221,7 +256,7 @@ public class HttpHandler implements Runnable {
 
 		for (i=0; i<s; i++) {
 			ch=jsonString.charAt(i);
-			if (i+1<s) ch1=jsonString.charAt(i+1);
+			if ((i+1)<s) ch1=jsonString.charAt(i+1);
 			else ch1='\0';
 
 			out=out+ch;
@@ -235,6 +270,18 @@ public class HttpHandler implements Runnable {
 			}			
 		}
 		return out;
+	}
+
+	private String Message() {
+		if (this.retCode.equals("200")) return " OK\n";
+		else if (this.retCode.equals("201")) return " Created\n";
+		else if (this.retCode.equals("202")) return " Accepted\n";
+		else if (this.retCode.equals("400")) return " Bad Request\n";
+		else if (this.retCode.equals("401")) return " Unauthorized\n";
+		else if (this.retCode.equals("404")) return " Not Found\n";
+		else if (this.retCode.equals("405")) return " Method Not Allowed\n";
+		else if (this.retCode.equals("409")) return " Conflict\n";
+		else return null;
 	}
 }
 
