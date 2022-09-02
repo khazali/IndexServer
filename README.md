@@ -44,7 +44,7 @@ The code still lacks the following features, which are being added gradually:
 
 
 ## Tests
-In the test directory, a simple multi-threaded HTTP client is implemented to check the integrity of the IndexServer. You can also use curl or any other client to test IndexServer performance.
+In the test directory, a simple multi-threaded HTTP client is implemented to check the integrity of the IndexServer. You can also use cURL or any other client to test IndexServer performance.
 
 
 ## APIs
