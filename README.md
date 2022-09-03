@@ -6,7 +6,7 @@ IndexServer is a non-blocking, thread-safe, parallel Restful API for index manag
 IndexServer can create indices and add or remove shares to/from them. IndexServer can also manage dividend payouts. The status of indices is deliverable in JSON format. IndexServer is an in-memory solution and does not use databases.
 
 IndexServer code consists of the following classes:
-1.	HttpHandler: which manages the connections and answers to the requests. All communications use HTTP protocol, and the required data are sent/received in JSON format.
+1.	HttpHandler: which manages the connections and responds to the requests. All communications use HTTP protocol, and the required data are sent/received in JSON format.
 2.	IndexHolder: which manages the indexes.
 3.	Index: which handles each index and its shares.
 4.	Share: which keeps the shares data.
@@ -55,7 +55,7 @@ Accepts a list of shares and creates an index:
 POST /create
 ```
 
-Returns: HTTP response with an empty body.
+Returns: HTTP response with an empty body:
 * 201 – if the index is created
 * 409 – if the index already exists
 * 400 – if any validation fails
@@ -68,8 +68,8 @@ POST /indexAdjustment
 ```
 
 
-1.	Share addition
-Given a share with name, price and number are added to given index/indices keeping the index value constant. Moreover, the index composition is adjusted. The addition of existing members is not allowed. One request will have only one index affected.
+1.	Share addition. 
+A share with a given name, price, and number is added to the given index/indices while keeping the index value constant. Moreover, the index composition is adjusted. The addition of existing members is not allowed. One request will have only one index affected.
 
 	Returns: Empty body with HTTP code:
 	* 201 - if the member is added
@@ -78,8 +78,8 @@ Given a share with name, price and number are added to given index/indices keepi
 	* 404 – index does not exist
 
 
-2.	Share deletion
-Given a share name, it is deleted from the given index/indices. One request will have only one index affected.
+2.	Share deletion. 
+A share with a given name is deleted from the given index/indices. One request will have only one index affected.
 
 	Returns: Empty body with HTTP code:
 	* 200 – if the member is deleted
@@ -89,7 +89,7 @@ Given a share name, it is deleted from the given index/indices. One request will
 	* 405 – the index has less than two members after deletion
 
 
-3.	Share dividend
+3.	Share dividend. 
 Adjusts the price of the given share based on dividend and re-adjusts the index composition. One request will have multiple indices affected.
 
 	Returns: Empty body with HTTP code:
