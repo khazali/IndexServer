@@ -6,6 +6,8 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutionException;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
@@ -62,6 +64,12 @@ public class HttpHandler implements Runnable {
 		int j=0;
 		int record=0;
 		char ch;
+		int k=0;
+        boolean readLength=false;
+        String Leng="";
+        boolean checkLen=true;
+        int ContentLength=0;
+		char[] Len= new char[14];
 		
 
 		do {
@@ -88,6 +96,21 @@ public class HttpHandler implements Runnable {
 
 		if (method.equals("POST")) {
 			do {
+				if (readLength) {
+					checkLen=false;
+					if (Character.isDigit(ch)) Leng=Leng+ch;
+					else if ((ch!=':') && (ch!=' ')){
+						readLength=false;
+						ContentLength=Integer.parseInt(Leng);
+						if (ContentLength==0) break;                 
+					}
+				}
+				if (checkLen) {
+					for (k=0; k<13; k++) Len[k]=Len[k+1];
+					Len[13]=ch;
+					if ((Len[0]=='C') && (Len[1]=='o') && (Len[2]=='n') && (Len[3]=='t') && (Len[4]=='e') && (Len[5]=='n') && (Len[6]=='t') && (Len[7]=='-') && (Len[8]=='L') && (Len[9]=='e') && (Len[10]=='n') && (Len[11]=='g') && (Len[12]=='t') && (Len[13]=='h')) readLength=true;
+				}
+
 				if (ch=='{') record++;
 				if (record!=0) sentJSON=sentJSON+ch;
 				if (ch=='}') {
@@ -95,20 +118,36 @@ public class HttpHandler implements Runnable {
 					if (record==0) break;
 				}			
 
+				//if ((!readLength) && (!checkLen)) {
+				//	if (ContentLength==0) break;
+					//else ContentLength--;
+				//}
 				ch=(char)(bf.read());
 				j++;				
 			} while (j<this.MaxBufferSize);
 
-			JSONParser parser = new JSONParser();
-			JSONObject json = (JSONObject) parser.parse(sentJSON);
+			//System.out.println(sentJSON);	
+			if ((sentJSON==null) || (sentJSON.length()==0)) this.retCode="400";
+			else {
+				JSONParser parser = new JSONParser();
+				JSONObject json=null;
+				boolean nparsed=false;
+				try {
+					json = (JSONObject) parser.parse(sentJSON);
+				}
+				catch (ParseException ex) {
+					nparsed=true;
+				}
 
-			if (context.equals("/create")) {
-				this.retCode=AddIndex(json);
-			}
-			else if (context.equals("/indexAdjustment")) {
-				this.retCode=AdjustIndex(json);
-			}
-			else this.retCode="400";			
+				if (nparsed) retCode="400";
+				else if (context.equals("/create")) {
+					this.retCode=AddIndex(json);
+				}
+				else if (context.equals("/indexAdjustment")) {
+					this.retCode=AdjustIndex(json);
+				}
+				else this.retCode="400";
+			}			
 		}
 
 		else if (method.equals("GET")) {
@@ -156,28 +195,56 @@ public class HttpHandler implements Runnable {
 		int i=0;
 		String indexName, shareName;
 		double price, numberOfShares;
+		boolean isInvalid=false;
+		JSONObject subja;
 
 		JSONObject subjson=(JSONObject)json.get("index");
+		if (subjson==null) return "400";
 		JSONArray ja=(JSONArray) subjson.get("indexshares");
+		if (ja==null) return "400";
 
 		indexName=(String) subjson.get("indexName");
-		if (indexName==null) return "400";		
+		if ((indexName==null) || (indexName.length()==0)) return "400";		
 		Index newIndex=this.indices.AddIndex(indexName);
 		if (newIndex==null) return "409";
 
 		Iterator itr=ja.iterator();
 		while (itr.hasNext()) {	
 			i++;			
-			JSONObject subja=(JSONObject) itr.next();
+			subja=(JSONObject) itr.next();
 			shareName=(String) subja.get("shareName");
-			if (shareName==null) return "400";
-			price=Double.parseDouble((String) ((subja.get("sharePrice")).toString()));
-			if (price<0) return "400";
-			numberOfShares=Double.parseDouble((String) ((subja.get("numberOfshares")).toString()));
-			if (numberOfShares<0) return "400";
-			if ((newIndex.AddShareCreate(shareName,  price, numberOfShares)).equals("202")) return "400";
+			if ((shareName==null) || (shareName.length()==0)) {
+				isInvalid=true;
+				break;
+			}
+			try {
+				price=Double.parseDouble((String) ((subja.get("sharePrice")).toString()));
+			}
+			catch (NumberFormatException ex) {
+				isInvalid=true;
+				break;
+			}
+			if (price<0) {
+				isInvalid=true;
+				break;
+			}
+			try {
+				numberOfShares=Double.parseDouble((String) ((subja.get("numberOfshares")).toString()));
+			}
+			catch (NumberFormatException ex) {
+				isInvalid=true;
+				break;
+			}
+			if (numberOfShares<0) {
+				isInvalid=true;
+				break;
+			}
+			if ((newIndex.AddShareCreate(shareName,  price, numberOfShares)).equals("202")) {
+				isInvalid=true;
+				break;
+			}
 		}
-		if (i<2) {
+		if ((isInvalid) || (i<2)) {
 			this.indices.Pop(indexName);
 			return "400";
 		}
@@ -187,41 +254,64 @@ public class HttpHandler implements Runnable {
 
 	private String AdjustIndex(JSONObject json) {
 		Iterator itr=json.keySet().iterator();
+		double price, numberOfShares, div;
+		JSONObject subjson;
+		String key;
+
 		if (!(itr.hasNext())) return "400";
 		while (itr.hasNext()) {	
-			String key=(String) itr.next();
-    		JSONObject subjson=(JSONObject) json.get(key);
+			key=(String) itr.next();
+    		subjson=(JSONObject) json.get(key);
+			if (subjson==null) return "400";
 
 			if (key.equals("additionOperation")) {
 				String indexName=(String) subjson.get("indexName");
-				if (indexName==null) return "400";
+				if ((indexName==null) || (indexName.length()==0)) return "400";
 				Index Index4Edit=this.indices.GetByName(indexName);
 				if (Index4Edit==null) return "404";				
 
 				String shareName=(String) subjson.get("shareName");
-				if (shareName==null) return "400";
-				double price=Double.parseDouble((String) ((subjson.get("sharePrice")).toString()));
+				if ((shareName==null) || (shareName.length()==0)) return "400";
+
+				try {
+					price=Double.parseDouble((String) ((subjson.get("sharePrice")).toString()));
+				}
+				catch (NumberFormatException ex) {
+					return "400";
+				}
 				if (price<0) return "400";
-				double numberOfShares=Double.parseDouble((String) ((subjson.get("numberOfshares")).toString()));
+				
+				try {
+					numberOfShares=Double.parseDouble((String) ((subjson.get("numberOfshares")).toString()));
+				}
+				catch (NumberFormatException ex) {
+					return "400";
+				}
 				if (numberOfShares<0) return "400";
 
 				return Index4Edit.AddShare(shareName,  price, numberOfShares);
 			}
 			else if (key.equals("deletionOperation")) {
 				String indexName=(String) subjson.get("indexName");
-				if (indexName==null) return "400";
+				if ((indexName==null) || (indexName.length()==0)) return "400";
 				Index Index4Edit=this.indices.GetByName(indexName);
 				if (Index4Edit==null) return "404";
 				String shareName=(String) subjson.get("shareName");
-				if (shareName==null) return "400";
+				if ((shareName==null) || (shareName.length()==0)) return "400";
 
 				return Index4Edit.RemoveShare(shareName);
 			}
 			else if (key.equals("dividendOperation")) {
 				String shareName=(String) subjson.get("shareName");
-				if (shareName==null) return "400";
-				double div=Double.parseDouble((String) ((subjson.get("dividendValue")).toString()));
-				if (div<0) return "400";
+				if ((shareName==null) || (shareName.length()==0)) return "400";
+
+				try {
+					div=Double.parseDouble((String) ((subjson.get("dividendValue")).toString()));
+				}
+				catch (NumberFormatException ex) {
+					return "400";
+				}
+				if (div<=0) return "400";
 
 				return this.indices.DoDividend(shareName, div);
 			}

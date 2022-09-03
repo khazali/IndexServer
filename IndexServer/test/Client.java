@@ -1,9 +1,21 @@
 public class Client {	
 	public static void main(String[] args) {
-        System.out.println("Client Start!\n\n\n\n\n");		
-        for (int i=0; i<4; i++) {            
-            Thread send=new Thread(new HttpSender());
+        HttpSender client;
+        System.out.println("Client Started!\n\n");        
+
+        client=new HttpSender(null, false);
+        client.run();        
+        String result=client.GetOutString();
+        //System.out.println(result);
+
+        for (int i=0; i<50; i++) {            
+            Thread send=new Thread(new HttpSender(result, false));
             send.start();
         }
+
+        client=new HttpSender(null, true);
+        client.run();        
+        result=client.GetOutString();
+        System.out.println(result);
 	}	
 }

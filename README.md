@@ -29,7 +29,8 @@ After run, you can send the requests to the default port of 54543. Pressing Ctrl
 * Re-adjustments are always performed in a uniform manner.
 * Each Index should have at least two members.
 * Index/share name cannot be blank or null.
-* Share price, the number of shares, and the dividend are always positive.
+* Share price and the number of shares cannot be negative.
+* The dividend must be positive.
 * Dividends cannot be greater than the price of the share.
 
 

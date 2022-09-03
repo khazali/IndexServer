@@ -66,19 +66,19 @@ public class Index {
 
     public synchronized String RemoveShare(String name) {
         Integer id=this.namesHash.get(name);
-        Integer s=this.shares.size();
-        if (s<3) return "400";
-        if (id!=null) {
-            int i;
-            int d=id.intValue();
-            double r=(this.shares.get(d)).GetIndexValue();
-            this.shares.remove(d);
-            this.namesHash.remove(name);
-            double factor=this.indexValue/(this.indexValue-r);           
-            for (i=0; i<s; i++) this.shares.get(i).MultIndexValue(factor); 
-            return "200";
-        }
-        else return "401";
+        if (id==null) return "401";
+        Integer s=this.shares.size()-1;
+        if (s<2) return "405";
+        
+        int i;
+        int d=id.intValue();
+        double r=(this.shares.get(d)).GetIndexValue();
+        this.shares.remove(d);
+        this.namesHash.remove(name);
+        double factor=this.indexValue/(this.indexValue-r);           
+        for (i=0; i<s; i++) this.shares.get(i).MultIndexValue(factor); 
+        return "200";
+       
     }
 
     public synchronized String Dividend(String name, double div) {

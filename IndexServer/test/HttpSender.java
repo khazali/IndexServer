@@ -12,14 +12,20 @@ public class HttpSender implements Runnable {
     private final int MaxBufferSize=8192;
     private InputStream input;
     private OutputStream output;
-    private Socket socket;    
+    private Socket socket; 
+    private String ID;
+    private String testString; 
+    private String outString;
+    private boolean DoDividend=false;  
     
     
-    public HttpSender() {
-        super();
+    public HttpSender(String inTest, boolean inDoDividend) {
+        this.testString=inTest;
+        this.DoDividend=inDoDividend;        
     }
 
     public void run() {
+        ID="Index_"+String.valueOf(Thread.currentThread().getId());
         String outputString1="""
             {
                 \"index\": {
@@ -104,28 +110,31 @@ public class HttpSender implements Runnable {
             ReceiveData();
             this.socket.close();
 
-            this.socket = new Socket(this.HOST, this.PORT);
-            this.input = this.socket.getInputStream();
-		    this.output = this.socket.getOutputStream();
-            SendData("POST", "/indexAdjustment", outputString4);
-            ReceiveData();
-            this.socket.close();
+            if (this.DoDividend) {
+                this.socket = new Socket(this.HOST, this.PORT);
+                this.input = this.socket.getInputStream();
+                this.output = this.socket.getOutputStream();
+                SendData("POST", "/indexAdjustment", outputString4);
+                ReceiveData();
+                this.socket.close();
+            }
 
             this.socket = new Socket(this.HOST, this.PORT);
             this.input = this.socket.getInputStream();
 		    this.output = this.socket.getOutputStream();
-            SendData("GET", "/indexState", "");
+            SendData("GET", "/indexState/"+ID, "");
             ReceiveData();
+            //if (this.testString!=null) System.out.println(this.outString);
+            if ((this.testString!=null) && (this.outString.equals(this.testString))) System.out.println("Thread "+String.valueOf(Thread.currentThread().getId())+": Success!");
             this.socket.close();
 
 		} catch (Exception e) {
-			System.err.println("Error occured:"+e.getMessage());
-			System.exit(0);
+			System.out.println("Error in thread "+String.valueOf(Thread.currentThread().getId())+": "+e.getMessage());
+			//System.exit(0);
 		}		
     }
 
     public void SendData(String method, String context, String json) throws IOException {
-        String ID="Index_"+String.valueOf(Thread.currentThread().getId());
         String sentjson=json.replaceAll("INDEX_1", ID);
         int l=0;
         String HEAD=method+" "+context+" HTTP/1.1\n";
@@ -175,7 +184,8 @@ public class HttpSender implements Runnable {
                 if (Character.isDigit(ch)) Leng=Leng+ch;
                 else if ((ch!=':') && (ch!=' ')){
                     readLength=false;
-                    ContentLength=Integer.parseInt(Leng);                 
+                    ContentLength=Integer.parseInt(Leng)+5;
+                    if (ContentLength==5) break;                 
                 }
             }
             if (checkLen) {
@@ -193,8 +203,24 @@ public class HttpSender implements Runnable {
             }            				
         } while (j<this.MaxBufferSize);
         
-        System.out.println(data);
-        
+        String results=data.replaceAll(ID, "INDEX_1");
+        String[] lines=results.split("\n");
+        for (int i=0; i<lines.length; i++){
+            if ((lines[i].startsWith("Date:")) || (lines[i].startsWith("Content-Length:"))){
+                lines[i]="";
+            }
+        }
+        StringBuilder finalStringBuilder=new StringBuilder("");
+        for (String s:lines){
+        if (!s.equals("")){
+            finalStringBuilder.append(s).append(System.getProperty("line.separator"));
+            }
+        }
+        this.outString=finalStringBuilder.toString();       
+    }
+
+    public String GetOutString() {
+        return this.outString;
     }
 
 }
