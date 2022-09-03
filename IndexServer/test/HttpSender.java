@@ -26,6 +26,8 @@ public class HttpSender implements Runnable {
 
     public void run() {
         ID="Index_"+String.valueOf(Thread.currentThread().getId());
+
+        //The Solactive sample strings
         String outputString1="""
             {
                 \"index\": {
@@ -124,7 +126,7 @@ public class HttpSender implements Runnable {
 		    this.output = this.socket.getOutputStream();
             SendData("GET", "/indexState/"+ID, "");
             ReceiveData();
-            //if (this.testString!=null) System.out.println(this.outString);
+            //Checking if out differs from the other similar threads
             if ((this.testString!=null) && (this.outString.equals(this.testString))) System.out.println("Thread "+String.valueOf(Thread.currentThread().getId())+": Success!");
             this.socket.close();
 
@@ -169,6 +171,7 @@ public class HttpSender implements Runnable {
         boolean checkLen=true;
         int ContentLength=0;
 
+        //Parsing the server response
         do {
             if ((!readLength) && (!checkLen)) {
                 if (ContentLength==0) break;
