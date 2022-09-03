@@ -66,14 +66,15 @@ public class Index {
 
     public synchronized String RemoveShare(String name) {
         Integer id=this.namesHash.get(name);
+        Integer s=this.shares.size();
+        if (s<3) return "400";
         if (id!=null) {
             int i;
             int d=id.intValue();
             double r=(this.shares.get(d)).GetIndexValue();
             this.shares.remove(d);
             this.namesHash.remove(name);
-            double factor=this.indexValue/(this.indexValue-r);
-            Integer s=this.shares.size();
+            double factor=this.indexValue/(this.indexValue-r);           
             for (i=0; i<s; i++) this.shares.get(i).MultIndexValue(factor); 
             return "200";
         }

@@ -9,7 +9,8 @@ public class IndexServer {
 	private ServerSocket serverSocket;
 	private IndexHolder Indices=new IndexHolder();	
 	
-	public static void main(String[] args) {		
+	public static void main(String[] args) {
+		System.out.println("Index Server started!");		
 		try {	
 			IndexServer server=new IndexServer();
 			server.start();			

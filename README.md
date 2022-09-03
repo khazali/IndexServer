@@ -19,7 +19,7 @@ Just run IndexServer.jar located in the IndexServer directory as:
 java -jar --enable-preview IndexServer.jar
 ```
 
-After run, you can send the requests to the default port of 54543.
+After run, you can send the requests to the default port of 54543. Pressing Ctrl+C will stop the execution.
 
 
 
