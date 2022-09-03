@@ -184,8 +184,8 @@ public class HttpSender implements Runnable {
                 if (Character.isDigit(ch)) Leng=Leng+ch;
                 else if ((ch!=':') && (ch!=' ')){
                     readLength=false;
-                    ContentLength=Integer.parseInt(Leng)+5;
-                    if (ContentLength==5) break;                 
+                    ContentLength=Integer.parseInt(Leng)+165;       //165 is the approximate header size
+                    if (ContentLength==165) break;                  //This prevents reading the garbage in the buffer
                 }
             }
             if (checkLen) {

@@ -5,32 +5,31 @@ import java.util.HashMap;
 
 
 public class IndexHolder {
-    private Vector<Index> indices = new Vector<Index>();
-    private HashMap<String, Integer> namesHash = new HashMap<String, Integer>();
+    private Vector<Index> indices = new Vector<Index>();                                        //Holds the "actual" index list
+    private HashMap<String, Integer> namesHash = new HashMap<String, Integer>();                //Tranlate the index name to its index [in the vector]
 
     public IndexHolder() {
         super();
     }
 
-    public synchronized void Pop(String name) {
+    public synchronized void Pop(String name) {                     //Removes the index if its parameters are found to be faulty- only employed in the index addition procedure.
         this.indices.remove(this.indices.size()-1);
         this.namesHash.remove(name);
     }
 
-    public synchronized Index AddIndex(String name) {        
+    public synchronized Index AddIndex(String name) {               //Adds an index to the list. Returns null if the index already exists.     
         if (this.namesHash.get(name)==null) {
             Integer s=this.indices.size();
             Index newIndex=new Index();
             newIndex.SetIndexName(name);
             this.indices.addElement(newIndex);
-            //this.indices.addElement(new Index());
             this.namesHash.put(name, s);
             return newIndex;
         }
         else return null;
     }
 
-    public Index GetByName(String name) {
+    public Index GetByName(String name) {                           //Determines the index of an index by its name :D
         Integer s=this.namesHash.get(name);
         if (s!=null) {
             int i=s.intValue();
@@ -40,11 +39,13 @@ public class IndexHolder {
         else return null;        
     }
 
-    public Index GetByIndex(int index) {
+    public Index GetByIndex(int index) {                            //Fetches an index by its index :)))
         if ((index>0) && (index<this.indices.size())) return this.indices.get(index);
         else return null;
     }
 
+
+    //Two following methods perform collective operations on all indices, which cannot be handled by indices themselves.
     public synchronized String DoDividend(String name, double div) {
         int i;
         String retCode="401";

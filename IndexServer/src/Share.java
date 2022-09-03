@@ -1,4 +1,6 @@
 public class Share {
+    //A class to store the share properties and handle its basic calculations. I think all methods are self-explanatory.
+    
     private String shareName;
     private double sharePrice;
     private double numberOfShares;

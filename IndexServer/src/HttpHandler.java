@@ -6,8 +6,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.TimeZone;
-import java.util.concurrent.ExecutionException;
-
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.*;
@@ -18,8 +16,8 @@ public class HttpHandler implements Runnable {
 	private Socket socket;
 	private String retCode="200";
 	private String outputString;
-	private IndexHolder indices;
-	private final int MaxBufferSize=8192;
+	private IndexHolder indices;					//Holds the index list wrapper
+	private final int MaxBufferSize=8192;			//Maximum input buffer size. Its default is 8192
 	
 	public HttpHandler(Socket socket, IndexHolder inIndices) {
 		this.socket=socket;
@@ -71,12 +69,14 @@ public class HttpHandler implements Runnable {
         int ContentLength=0;
 		char[] Len= new char[14];
 		
-
+		//High-performance buffer parsing
 		do {
 			ch=(char)(bf.read());
 			j++;
 		} while ((Character.isWhitespace(ch)) && (j<this.MaxBufferSize));
 
+
+		//Extract the method
 		while ((!Character.isWhitespace(ch)) && (j<this.MaxBufferSize)) {			
 			method=method+ch;
 			ch=(char)(bf.read());
@@ -88,6 +88,7 @@ public class HttpHandler implements Runnable {
 			j++;
 		}
 
+		//Extract the context
 		while ((!Character.isWhitespace(ch)) && (j<this.MaxBufferSize)) {			
 			context=context+ch;
 			ch=(char)(bf.read());
@@ -95,6 +96,7 @@ public class HttpHandler implements Runnable {
 		}
 
 		if (method.equals("POST")) {
+			//Extract the JSON string
 			do {
 				if (readLength) {
 					checkLen=false;
@@ -102,10 +104,10 @@ public class HttpHandler implements Runnable {
 					else if ((ch!=':') && (ch!=' ')){
 						readLength=false;
 						ContentLength=Integer.parseInt(Leng);
-						if (ContentLength==0) break;                 
+						if (ContentLength==0) break;		//Protects against empty data parsing                 
 					}
 				}
-				if (checkLen) {
+				if (checkLen) {			//Find Content-Length value
 					for (k=0; k<13; k++) Len[k]=Len[k+1];
 					Len[13]=ch;
 					if ((Len[0]=='C') && (Len[1]=='o') && (Len[2]=='n') && (Len[3]=='t') && (Len[4]=='e') && (Len[5]=='n') && (Len[6]=='t') && (Len[7]=='-') && (Len[8]=='L') && (Len[9]=='e') && (Len[10]=='n') && (Len[11]=='g') && (Len[12]=='t') && (Len[13]=='h')) readLength=true;
@@ -116,18 +118,13 @@ public class HttpHandler implements Runnable {
 				if (ch=='}') {
 					record--;
 					if (record==0) break;
-				}			
-
-				//if ((!readLength) && (!checkLen)) {
-				//	if (ContentLength==0) break;
-					//else ContentLength--;
-				//}
+				}
+				
 				ch=(char)(bf.read());
 				j++;				
 			} while (j<this.MaxBufferSize);
 
-			//System.out.println(sentJSON);	
-			if ((sentJSON==null) || (sentJSON.length()==0)) this.retCode="400";
+			if ((sentJSON==null) || (sentJSON.length()==0)) this.retCode="400";			//Checks the validation of JSON string
 			else {
 				JSONParser parser = new JSONParser();
 				JSONObject json=null;
@@ -141,10 +138,10 @@ public class HttpHandler implements Runnable {
 
 				if (nparsed) retCode="400";
 				else if (context.equals("/create")) {
-					this.retCode=AddIndex(json);
+					this.retCode=AddIndex(json);					//Create index
 				}
 				else if (context.equals("/indexAdjustment")) {
-					this.retCode=AdjustIndex(json);
+					this.retCode=AdjustIndex(json);					//Adjustments
 				}
 				else this.retCode="400";
 			}			
@@ -152,14 +149,14 @@ public class HttpHandler implements Runnable {
 
 		else if (method.equals("GET")) {
 			if (context.equals("/indexState")) {
-				GetAllStates();
+				GetAllStates();									//Get the state of all indices
 				this.retCode="200";
 			}
 			else {
 				String[] indexName=context.split("/", 0);
 				if ((indexName==null) || (indexName.length!=3)) this.retCode="400";
 				else {
-					GetState(indexName[2]);
+					GetState(indexName[2]);					//Get the state of an index
 					this.retCode="200";
 				}
 			}
@@ -171,6 +168,8 @@ public class HttpHandler implements Runnable {
 	}
 
 	private void PopulateResponse(OutputStream output) throws IOException {
+		//Creates the HTTP response
+
 		SimpleDateFormat format=new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z");
 		format.setTimeZone(TimeZone.getTimeZone("GMT"));
 		int l=0;
@@ -198,6 +197,8 @@ public class HttpHandler implements Runnable {
 		boolean isInvalid=false;
 		JSONObject subja;
 
+
+		//Checking the validity of the request parameters
 		JSONObject subjson=(JSONObject)json.get("index");
 		if (subjson==null) return "400";
 		JSONArray ja=(JSONArray) subjson.get("indexshares");
@@ -209,9 +210,11 @@ public class HttpHandler implements Runnable {
 		if (newIndex==null) return "409";
 
 		Iterator itr=ja.iterator();
-		while (itr.hasNext()) {	
+		while (itr.hasNext()) {						//Get the request details
 			i++;			
 			subja=(JSONObject) itr.next();
+
+			//Checking and setting the parameters
 			shareName=(String) subja.get("shareName");
 			if ((shareName==null) || (shareName.length()==0)) {
 				isInvalid=true;
@@ -239,11 +242,13 @@ public class HttpHandler implements Runnable {
 				isInvalid=true;
 				break;
 			}
-			if ((newIndex.AddShareCreate(shareName,  price, numberOfShares)).equals("202")) {
+			if ((newIndex.AddShareCreate(shareName,  price, numberOfShares)).equals("202")) {			//Calling the actual function to do the work!
 				isInvalid=true;
 				break;
 			}
 		}
+
+		//If any parameter was invalid, the new index must not be added to the index list!
 		if ((isInvalid) || (i<2)) {
 			this.indices.Pop(indexName);
 			return "400";
@@ -252,7 +257,7 @@ public class HttpHandler implements Runnable {
 		return "201";
 	}
 
-	private String AdjustIndex(JSONObject json) {
+	private String AdjustIndex(JSONObject json) {						//Handles the adjustment requests. The function first does the validation check of the JSON, then it calls the actual method.
 		Iterator itr=json.keySet().iterator();
 		double price, numberOfShares, div;
 		JSONObject subjson;
@@ -289,7 +294,7 @@ public class HttpHandler implements Runnable {
 				}
 				if (numberOfShares<0) return "400";
 
-				return Index4Edit.AddShare(shareName,  price, numberOfShares);
+				return Index4Edit.AddShare(shareName,  price, numberOfShares);				//The "actual" worker
 			}
 			else if (key.equals("deletionOperation")) {
 				String indexName=(String) subjson.get("indexName");
@@ -299,7 +304,7 @@ public class HttpHandler implements Runnable {
 				String shareName=(String) subjson.get("shareName");
 				if ((shareName==null) || (shareName.length()==0)) return "400";
 
-				return Index4Edit.RemoveShare(shareName);
+				return Index4Edit.RemoveShare(shareName);								//Removes the share from the selected index
 			}
 			else if (key.equals("dividendOperation")) {
 				String shareName=(String) subjson.get("shareName");
@@ -313,7 +318,7 @@ public class HttpHandler implements Runnable {
 				}
 				if (div<=0) return "400";
 
-				return this.indices.DoDividend(shareName, div);
+				return this.indices.DoDividend(shareName, div);						//This method has to be managed by the index list holder since dividends can affect multiple indices.
 			}
 			else return "400";
 		}
@@ -323,10 +328,10 @@ public class HttpHandler implements Runnable {
 	private void GetAllStates() {
 		JSONObject json=this.indices.DoStates();
 		if (json==null) this.outputString="";
-		else this.outputString=Pretty(json.toString());
+		else this.outputString=Pretty(json.toString());								//This method has to be managed by the index list holder since we require all indices data
 	}
 
-	private void GetState(String indexName) {		
+	private void GetState(String indexName) {										//We need the data of only one index here, so this method is performed by an index.	
 		Index index=this.indices.GetByName(indexName); 
 		if (index!=null) {
 			JSONObject json=new JSONObject();
@@ -336,7 +341,7 @@ public class HttpHandler implements Runnable {
 		}
 	}
 
-	private String Pretty(String jsonString) {
+	private String Pretty(String jsonString) {										//Formatting the output JSON string. Shockingly, no function is available to do that. So I wrote one here.
 		int count=0;
 		int s=jsonString.length();
 		int i, j;
@@ -361,7 +366,7 @@ public class HttpHandler implements Runnable {
 		return out;
 	}
 
-	private String Message() {
+	private String Message() {																		//Translates HTML code to its equivalent message 
 		if (this.retCode.equals("200")) return " OK\n";
 		else if (this.retCode.equals("201")) return " Created\n";
 		else if (this.retCode.equals("202")) return " Accepted\n";

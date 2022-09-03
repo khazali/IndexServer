@@ -8,8 +8,8 @@ import java.util.Map;
 
 
 public class Index {
-    private HashMap<String, Integer> namesHash = new HashMap<String, Integer>();
-    private ArrayList<Share> shares = new ArrayList<Share>();
+    private HashMap<String, Integer> namesHash = new HashMap<String, Integer>();                               //Map to translate the share name to its index in the list                           
+    private ArrayList<Share> shares = new ArrayList<Share>();                                                  //Unsynchronized list of shares. It helps us to increase performance. The thread-safety is achieved by synchronized methods.
     private String indexName;
     private double indexValue;
 
@@ -29,7 +29,7 @@ public class Index {
         return this.indexName;
     }
     
-    public double CalculateIndex() {
+    public double CalculateIndex() {                                                                            //Calculates total index value and the weight percent of each share
         int s=this.shares.size();
         int i;
 
@@ -38,7 +38,7 @@ public class Index {
         return this.indexValue;
     }
 
-    public String AddShareCreate(String name, double price, double number) {
+    public String AddShareCreate(String name, double price, double number) {                                    //Validates the input parameters and adds a share to a new index.
         if (this.namesHash.get(name)==null) {
             Integer s=this.shares.size();
             this.shares.add(new Share(name, price, number));
@@ -48,7 +48,7 @@ public class Index {
         else return "202";
     }
 
-    public synchronized String AddShare(String name, double price, double number) {
+    public synchronized String AddShare(String name, double price, double number) {                             //Validates the input parameters, readjusts the index, and adds a share.
         if (this.namesHash.get(name)==null) {
             int i;
             Integer s=this.shares.size();
@@ -64,7 +64,7 @@ public class Index {
         else return "202";
     }
 
-    public synchronized String RemoveShare(String name) {
+    public synchronized String RemoveShare(String name) {                                           //Removes a share from an index that contains more than two shares. Returns appropriate codes for the performed task.
         Integer id=this.namesHash.get(name);
         if (id==null) return "401";
         Integer s=this.shares.size()-1;
@@ -81,7 +81,7 @@ public class Index {
        
     }
 
-    public synchronized String Dividend(String name, double div) {
+    public synchronized String Dividend(String name, double div) {                                  //If the requested share is available in this index, the share price is reduced by the dividend value, and the index is readjusted.
         double factor;
         int i;
         Integer sn=this.namesHash.get(name);
@@ -101,7 +101,7 @@ public class Index {
         else return "401";
     }
 
-    public synchronized JSONObject GetState() {
+    public synchronized JSONObject GetState() {                                                                 //Returns the state of the index in a JSON object
         int s=this.shares.size();
         int i;
         JSONArray ja=new JSONArray();
